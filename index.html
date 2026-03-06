@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quotation System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── LOGIN ── */
+    #loginContainer {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    #loginContainer .header h1 { font-size: 2em; }
+
+    .login-icon {
+      font-size: 3em;
+      margin-bottom: 10px;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 10px;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .login-error {
+      background: #fdecea;
+      color: #c0392b;
+      padding: 12px 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 4px solid #e74c3c;
+      font-size: 0.9em;
+      display: none;
+    }
+
+    .login-error.show { display: block; animation: slideDown 0.3s ease; }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1em;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input[type="password"].error { border-color: #e74c3c; }
+
+    /* ── QUOTATION (original styles kept) ── */
+    #quotationContainer { display: none; }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      color: #667eea;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p { color: #666; font-size: 1.1em; }
+
+    .form-group { margin-bottom: 25px; }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    label .required { color: #e74c3c; }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 1em;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    input.error, textarea.error { border-color: #e74c3c; }
+
+    .error-message {
+      color: #e74c3c;
+      font-size: 0.85em;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .error-message.show { display: block; }
+
+    textarea { resize: vertical; min-height: 100px; }
+
+    .btn-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    button {
+      flex: 1;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-generar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-generar:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-generar:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+    .btn-limpiar { background: #f1f3f5; color: #495057; }
+    .btn-limpiar:hover { background: #e9ecef; }
+
+    .btn-logout {
+      background: none;
+      border: 2px solid #e0e0e0;
+      color: #999;
+      font-size: 0.8em;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex: unset;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-logout:hover { border-color: #e74c3c; color: #e74c3c; }
+
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 25px; }
+      .header h1 { font-size: 2em; }
+      .grid { grid-template-columns: 1fr; }
+      .btn-container { flex-direction: column; }
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: none;
+      border-left: 4px solid #28a745;
+    }
+
+    .success-message.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .input-icon { position: relative; }
+
+    .currency-symbol {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #666;
+      font-weight: 600;
+    }
+
+    input.with-currency { padding-left: 35px; }
+
+
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════ LOGIN ══════════════ -->
+  <div style="text-align: left;">
+    <img src='./LogoPaintColor_v2.png' width="150" height="150">
+  </div>
+  <div id="loginContainer">
+    <div class="header">
+      <div class="login-icon">🔐</div>
+      <h1>Welcome</h1>
+      <p>Sign in to access the Quotation System</p>
+    </div>
+
+    <div id="loginError" class="login-error">
+      ❌ Incorrect username or password. Please try again.
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="loginUser">Username <span class="required">*</span></label>
+        <input type="text" id="loginUser" placeholder="Enter your username" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label for="loginPass">Password <span class="required">*</span></label>
+        <input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-login">🔓 Sign In</button>
+    </form>
+  </div>
+
+  <!-- ══════════════ QUOTATION ══════════════ -->
+  <div id="quotationContainer">
+    <div class="top-bar">
+      <button class="btn-logout" onclick="logout()">🚪 Log out</button>
+    </div>
+
+    <div class="header">
+      <h1> Quotation System</h1>
+      <p>Fill out the form to generate your quote</p>
+    </div>
+
+    <div id="successMessage" class="success-message">
+      ✔ Quote generated successfully
+    </div>
+
+    <form id="quotationForm">
+      <div class="grid">
+        <div class="form-group">
+          <label for="contractorName">Contractor Name <span class="required">*</span></label>
+          <input type="text" id="contractorName" name="contractorName" value="Ulises Yovani Pineda Pérez" required>
+          <div class="error-message" id="errorContractorName">This field is required</div>
+        </div>
+
+        <div class="form-group">
+          <label for="clientName">Client Full Name <span class="required">*</span></label>
+          <input type="text" id="clientName" name="clientName" required>
+          <div class="error-message" id="errorClientName">This field is required</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="address">Client Address <span class="required">*</span></label>
+        <input type="text" id="address" name="address" required>
+        <div class="error-message" id="errorAddress">This field is required</div>
+      </div>
+
+      <div class="form-group">
+        <label for="contractorAddress">Contractor Address <span class="required">*</span></label>
+        <input type="text" id="contractorAddress" name="contractorAddress" value="24200 Durham st georgetown 19947" required>
+        <div class="error-message" id="errorContractorAddress">This field is required</div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Services Description <span class="required">*</span></label>
+        <textarea id="description" name="description" required></textarea>
+        <div class="error-message" id="errorDescription">This field is required</div>
+      </div>
+
+      <div class="form-group">
+        <label for="description2">Estimate Description <span class="required">*</span></label>
+        <textarea id="description2" name="description2" required></textarea>
+        <div class="error-message" id="errorDescription2">This field is required</div>
+      </div>
+
+      <div class="form-group">
+        <label for="amount">Total Amount <span class="required">*</span></label>
+        <div class="input-icon">
+          <span class="currency-symbol">$</span>
+          <input type="number" id="amount" name="amount" class="with-currency" step="0.01" min="0" required>
+        </div>
+        <div class="error-message" id="errorAmount">Please enter a valid amount greater than 0</div>
+      </div>
+
+      <div class="btn-container">
+        <button type="button" class="btn-limpiar" onclick="clearForm()">🗑️ Clear</button>
+        <button type="submit" class="btn-generar">📄 Generate PDF</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+
+  const VALID_USERS = [
+    { username: 'admin',  hash: 'bfc6294928448987d1a40b668da79ac020db48aee3c1181c71d52b61e954faaa' },
+    { username: 'miguel',  hash: '8cf536441b280bd3a7e343abfd03f55c24f552b4976f3766816a3c151f05dbeb' },
+    { username: 'ulises', hash: '3280a9d8ce2ce2ed9fe91ae61df7ca885c72963639dc922adb3178a847c5a2a8' }
+  ];
+
+  // SHA-256 using the built-in Web Crypto API (no libraries needed)
+  async function sha256(message) {
+    const msgBuffer  = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  // ─────────────────────────────────────────
+  //  LOGIN LOGIC
+  // ─────────────────────────────────────────
+  const loginContainer     = document.getElementById('loginContainer');
+  const quotationContainer = document.getElementById('quotationContainer');
+  const loginError         = document.getElementById('loginError');
+
+  // Check if already logged in (session persists while tab is open)
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showQuotation();
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const user     = document.getElementById('loginUser').value.trim();
+    const pass     = document.getElementById('loginPass').value;
+    const passHash = await sha256(pass);
+
+    const match = VALID_USERS.find(u => u.username === user && u.hash === passHash);
+
+    if (match) {
+      sessionStorage.setItem('loggedIn', 'true');
+      loginError.classList.remove('show');
+      showQuotation();
+    } else {
+      loginError.classList.add('show');
+      document.getElementById('loginPass').classList.add('error');
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  });
+
+  // Clear error styling on input
+  document.getElementById('loginPass').addEventListener('input', function() {
+    this.classList.remove('error');
+    loginError.classList.remove('show');
+  });
+
+  function showQuotation() {
+    loginContainer.style.display = 'none';
+    quotationContainer.style.display = 'block';
+    // Update max-width for the larger form
+    document.querySelector('.container').style.maxWidth = '800px';
+  }
+
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    quotationContainer.style.display = 'none';
+    loginContainer.style.display = 'block';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  }
+
+  // ─────────────────────────────────────────
+  //  QUOTATION LOGIC (unchanged)
+  // ─────────────────────────────────────────
+  const form = document.getElementById('quotationForm');
+  const successMessage = document.getElementById('successMessage');
+  const DEFAULT_LOGO = './LogoPaintColor_v2.png';
+
+  const inputs = form.querySelectorAll('input, textarea');
+  inputs.forEach(input => {
+    input.addEventListener('blur', () => validateField(input));
+    input.addEventListener('input', () => {
+      if (input.classList.contains('error')) validateField(input);
+    });
+  });
+  // Evento Enter
+  document.getElementById('description').addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      document.getElementById('description').addEventListener('keydown');// Evita el comportamiento por defecto (salto de línea o envío)
+
+    }
+  });
+
+  function validateField(field) {
+    const errorElement = document.getElementById(`error${field.id.charAt(0).toUpperCase() + field.id.slice(1)}`);
+    if (!field.value.trim()) {
+      field.classList.add('error');
+      if (errorElement) errorElement.classList.add('show');
+      return false;
+    }
+    if (field.id === 'amount' && parseFloat(field.value) <= 0) {
+      field.classList.add('error');
+      if (errorElement) errorElement.classList.add('show');
+      return false;
+    }
+    field.classList.remove('error');
+    if (errorElement) errorElement.classList.remove('show');
+    return true;
+  }
+
+  function validateForm() {
+    let isValid = true;
+    inputs.forEach(input => { if (!validateField(input)) isValid = false; });
+    return isValid;
+  }
+
+  function clearForm() {
+    form.reset();
+    inputs.forEach(input => {
+      input.classList.remove('error');
+      const errorElement = document.getElementById(`error${input.id.charAt(0).toUpperCase() + input.id.slice(1)}`);
+      if (errorElement) errorElement.classList.remove('show');
+    });
+    successMessage.classList.remove('show');
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!validateForm()) return;
+    generatePDF();
+  });
+
+  function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const contractorName    = document.getElementById('contractorName').value;
+    const clientName        = document.getElementById('clientName').value;
+    const address           = document.getElementById('address').value;
+    const contractorAddress = document.getElementById('contractorAddress').value;
+    const description       = document.getElementById('description').value;
+    const description2       = document.getElementById('description2').value;
+    const amount            = parseFloat(document.getElementById('amount').value);
+
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const primaryColor = [102, 126, 234];
+    const textColor    = [50, 50, 50];
+    const black        = [0, 0, 0];
+
+    try { doc.addImage(DEFAULT_LOGO, 'PNG', 10, 5, 35, 30); }
+    catch (e) { console.error('Error adding logo:', e); }
+
+    doc.setTextColor(...black);
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'Georgia');
+    doc.text('ESTIMATE', 105, 20, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.text(date, 170, 30, { align: 'right' });
+
+    doc.setFont(undefined, 'bold');
+    doc.text('CONTRACTOR:', 20, 50);
+    doc.setTextColor(...textColor);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text(contractorName, 20, 55);
+    const contractorAddressLines = doc.splitTextToSize(contractorAddress, 70);
+    doc.text(contractorAddressLines, 20, 60);
+
+    doc.setFont(undefined, 'bold');
+    doc.text('CLIENT NAME:', 100, 55);
+    doc.setFont(undefined, 'Arial');
+    doc.text(clientName, 135, 55);
+    doc.setFont(undefined, 'bold');
+    doc.text('ADDRESS:', 100, 60);
+    doc.setFont(undefined, 'Arial');
+    const addressLines = doc.splitTextToSize(address, 70);
+    doc.text(addressLines, 125, 60);
+
+    let yPos = 52 + (addressLines.length * 7) + 10;
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.2);
+    doc.line(20, yPos, 190, yPos);
+
+    yPos += 10;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.text('SERVICE DESCRIPTION:', 20, yPos);
+
+    yPos += 8;
+    doc.setFont(undefined, 'Arial');
+    doc.setFontSize(12);
+    //doc.getElementById('description').addEventListener('keydown');
+    const descriptionLines = doc.splitTextToSize(description, 170);
+    doc.text('Paint Up Colors LLC ' + descriptionLines, 20, yPos, { align: 'left', maxWidth: 170 });
+    yPos += (descriptionLines.length * 4) + 13;
+
+    const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+
+    doc.setFont(undefined, 'Arial');
+    doc.setFontSize(12);
+    //doc.getElementById('description').addEventListener('keydown');
+    const descriptionLines1 = doc.splitTextToSize(description2, 170);
+    //yPos += (descriptionLines.length * 3) + 13;
+    doc.text('For this project Paint Up Colors would charge ' + formattedAmount
+      + ' ' + description2, 20, yPos, { align: 'left', maxWidth: 170 });
+    yPos += (descriptionLines1.length * 2) + 13;
+    doc.text('Any extra work that needs to be done will be notified to the owner in advance. This will have an additional charge in material and time.', 20, yPos, { align: 'left', maxWidth: 170 });
+
+    yPos += 25;
+    doc.setFillColor(240, 240, 255);
+    doc.rect(20, yPos - 5, 170, 18, 'F');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...primaryColor);
+    doc.text('Rough estimate:', 25, yPos + 7);
+    doc.text(formattedAmount, 185, yPos + 7, { align: 'right' });
+
+    yPos += 30;
+    //doc.setTextColor(150, 150, 150);
+    doc.setTextColor(...black);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'Arial');
+    doc.text('Important note: If you agree with the quote provided, we require a 50% deposit to proceed and follow up on your service.',
+      20, yPos, { align: 'left', maxWidth: 190 });
+
+    yPos = 240;
+    doc.setTextColor(...textColor);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.line(30, yPos, 90, yPos);
+    doc.text('Contractor Signature', 60, yPos + 6, { align: 'center' });
+    doc.setFont(undefined, 'bold');
+    doc.text(contractorName, 60, yPos + 12, { align: 'center' });
+
+
+    doc.setFont(undefined, 'normal');
+    doc.line(120, yPos, 180, yPos);
+    doc.text('Client Signature', 150, yPos + 6, { align: 'center' });
+    doc.setFont(undefined, 'bold');
+    doc.text(clientName, 150, yPos + 12, { align: 'center' });
+
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'italic');
+    doc.text('This document is a valid quote for 30 days from the date of issue.', 105, 280, { align: 'center' });
+
+    const fileName = `Quote_${clientName.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`;
+    doc.save(fileName);
+
+    successMessage.classList.add('show');
+    setTimeout(() => successMessage.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
