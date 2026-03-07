@@ -1,112 +1,374 @@
-"use strict";
-function san(s){var d=document.createElement('div');d.appendChild(document.createTextNode(String(s).trim()));return d.innerHTML}
+document.addEventListener('DOMContentLoaded', function () {
 
-/* Scroll reveal */
-var ro=new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');ro.unobserve(x.target)}})},{threshold:.1});
-document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el)});
+  const VALID_USERS = [
+    {username: 'admin',  hash: 'bfc6294928448987d1a40b668da79ac020db48aee3c1181c71d52b61e954faaa'},
+    {username: 'miguel',  hash: '8cf536441b280bd3a7e343abfd03f55c24f552b4976f3766816a3c151f05dbeb'},
+    {username: 'ulises', hash: '3280a9d8ce2ce2ed9fe91ae61df7ca885c72963639dc922adb3178a847c5a2a8'}
+  ];
 
-/* Carousel */
-var cur=0,ctr=document.getElementById('ctr'),tot=ctr.querySelectorAll('.cslide').length,cdo=document.getElementById('cdots'),asi;
-(function(){for(var i=0;i<tot;i++){var d=document.createElement('div');d.className='cdot'+(i===0?' on':'');(function(n){d.onclick=function(){ra();go(n)}})(i);cdo.appendChild(d)}})();
-function go(n){cur=(n+tot)%tot;ctr.style.transform='translateX(-'+(cur*100)+'%)';cdo.querySelectorAll('.cdot').forEach(function(d,i){d.classList.toggle('on',i===cur)})}
-function ra(){clearInterval(asi);asi=setInterval(function(){go(cur+1)},5000)}
-function mv(d){ra();go(cur+d)}
-document.getElementById('btnP').onclick=function(){mv(-1)};
-document.getElementById('btnN').onclick=function(){mv(1)};
-ra();
-var tx=0;
-ctr.parentElement.addEventListener('touchstart',function(e){tx=e.touches[0].clientX},{passive:true});
-ctr.parentElement.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)mv(dx<0?1:-1)});
+  // SHA-256 using the built-in Web Crypto API (no libraries needed)
+  async function sha256(message) {
+    const msgBuffer  = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
 
-/* Toast */
-function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='ton t'+(t==='error'?'err':'ok');setTimeout(function(){el.className=''},4500)}
+  // ─────────────────────────────────────────
+  // LOGIN LOGIC
+  // ─────────────────────────────────────────
+  const loginContainer = document.getElementById('loginContainer');
+  const quotationContainer = document.getElementById('quotationContainer');
+  const loginError = document.getElementById('loginError');
 
-/* Validators */
-function vEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim())}
-function vPhone(v){return /^[\d\s()\+\-\.]{7,20}$/.test(v.replace(/\s/g,''))}
-function vName(v){return v.trim().length>=2}
-function em(id,show){var el=document.getElementById(id);if(!el)return;el.style.display=show?'block':'none';el.classList.toggle('on',show)}
-function fs(el,ok){el.classList.toggle('fok',ok);el.classList.toggle('ferr',!ok)}
-function bv(el,fn,eid){
-  el.addEventListener('blur',function(){var ok=fn(el.value);fs(el,ok);em(eid,!ok)});
-  el.addEventListener('input',function(){if(el.classList.contains('ferr')&&fn(el.value)){fs(el,true);em(eid,false)}})
-}
-bv(document.getElementById('qFn'),vName,'qFnE');
-bv(document.getElementById('qLn'),vName,'qLnE');
-bv(document.getElementById('qPh'),vPhone,'qPhE');
-bv(document.getElementById('qEm'),vEmail,'qEmE');
-bv(document.getElementById('qSv'),function(v){return v!==''},'qSvE');
-bv(document.getElementById('qDs'),function(v){return v.trim().length>=20},'qDsE');
+  // Check if already logged in (session persists while tab is open)
+  if (sessionStorage.getItem('loggedIn') === 'true') {
+    showQuotation();
+  }
 
-/* Phone format */
-document.getElementById('qPh').addEventListener('input',function(){
-  var v=this.value.replace(/\D/g,'').substring(0,10);
-  if(v.length>=6)v='('+v.substring(0,3)+') '+v.substring(3,6)+'-'+v.substring(6);
-  else if(v.length>=3)v='('+v.substring(0,3)+') '+v.substring(3);
-  this.value=v
-});
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-/* Quote form */
-document.getElementById('qForm').addEventListener('submit',function(e){
-  e.preventDefault();
-  var F=document.getElementById('qFn'),L=document.getElementById('qLn'),
-    P=document.getElementById('qPh'),E=document.getElementById('qEm'),
-    S=document.getElementById('qSv'),D=document.getElementById('qDs'),
-    V=document.getElementById('qPv'),ok=true;
-  [[F,vName,'qFnE'],[L,vName,'qLnE'],[P,vPhone,'qPhE'],[E,vEmail,'qEmE'],
-    [S,function(v){return v!==''},'qSvE'],[D,function(v){return v.trim().length>=20},'qDsE']]
-    .forEach(function(c){var v=c[1](c[0].value);fs(c[0],v);em(c[2],!v);if(!v)ok=false});
-  if(!V.checked){em('qPvE',true);ok=false}else{em('qPvE',false)}
-  if(!ok){toast('Por favor corrige los campos marcados en rojo.','error');var fe=document.querySelector('#qForm .ferr');if(fe)fe.scrollIntoView({behavior:'smooth',block:'center'});return}
-  var btn=document.getElementById('qSub');btn.disabled=true;btn.textContent='Enviando...';
-  fetch('https://api.web3forms.com/submit',{
-    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({access_key:'3f475c43-5373-4c9e-8852-2e48e2577eed',
-      subject:'Nueva Solicitud de Cotizacion - PaintUpColors',
-      from_name:'PaintUpColors Web',
-      firstName:F.value.trim(),lastName:L.value.trim(),
-      phone:P.value.trim(),email:E.value.trim(),
-      service:S.value,description:D.value.trim()})
-  }).then(function(r){return r.json()}).then(function(r){
-    if(r.success){document.getElementById('qForm').style.display='none';document.getElementById('qSuc').style.display='block';toast('Solicitud enviada con exito!','success')}
-    else throw new Error(r.message)
-  }).catch(function(){toast('Error al enviar. Intenta de nuevo o llamanos.','error');btn.disabled=false;btn.textContent='Enviar Solicitud de Cotizacion'})
-});
+    const user     = document.getElementById('loginUser').value.trim();
+    const pass     = document.getElementById('loginPass').value;
+    const passHash = await sha256(pass);
 
-(function () {
-  const sliders = ['si1', 'si2', 'si3', 'si4'];
+    const match = VALID_USERS.find(u => u.username === user && u.hash === passHash);
 
-  sliders.forEach((id) => {
-    const inner = document.getElementById(id);
-    if (!inner) return;
-    const total = inner.children.length;
-    let current = 0;
-
-    setInterval(() => {
-      current = (current + 1) % total;
-      inner.style.transform = `translateX(-${current * 100}%)`;
-    }, 3000); // cambia cada 3 segundos
+    if (match) {
+      sessionStorage.setItem('loggedIn', 'true');
+      loginError.classList.remove('show');
+      showQuotation();
+    } else {
+      loginError.classList.add('show');
+      document.getElementById('loginPass').classList.add('error');
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
   });
-})();
 
-/* Review form */
-document.getElementById('revForm').addEventListener('submit',function(e){
-  e.preventDefault();
-  var n=document.getElementById('rNm').value.trim(),
-    c=document.getElementById('rCt').value.trim(),
-    t=document.getElementById('rTx').value.trim(),
-    r=document.querySelector('input[name="rat"]:checked'),ok=true;
-  if(!vName(n)){em('rNmE',true);ok=false}else{em('rNmE',false)}
-  if(!r){em('rRtE',true);ok=false}else{em('rRtE',false)}
-  if(t.length<20){em('rTxE',true);ok=false}else{em('rTxE',false)}
-  if(!ok){toast('Completa todos los campos requeridos.','error');return}
-  var st='',rv=parseInt(r.value);
-  for(var i=0;i<rv;i++)st+='&#9733;';for(var j=rv;j<5;j++)st+='&#9734;';
-  var ini=n.split(' ').map(function(w){return w[0]||''}).join('').substring(0,2).toUpperCase();
-  var card=document.createElement('div');card.className='rcard in';
-  card.innerHTML='<div class="stars">'+st+'</div><div class="rq">"</div><p class="rt">'+san(t)+'</p>'+
-    '<div class="ra"><div class="rav">'+san(ini)+'</div><div><div class="rn">'+san(n)+'</div>'+
-    '<div class="rl">'+san(c||'Cliente verificado')+'</div></div></div>';
-  document.getElementById('rGrid').prepend(card);
-  this.reset();toast('Gracias por tu comentario!','success')
-});
+  // Clear error styling on input
+  document.getElementById('loginPass').addEventListener('input', function() {
+    this.classList.remove('error');
+    loginError.classList.remove('show');
+  });
+
+  function showQuotation() {
+    loginContainer.style.display = 'none';
+    quotationContainer.style.display = 'block';
+    // Update max-width for the larger form
+    document.querySelector('.container').style.maxWidth = '800px';
+  }
+
+  function logout() {
+    sessionStorage.removeItem('loggedIn');
+    quotationContainer.style.display = 'none';
+    loginContainer.style.display = 'block';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  }
+
+  // ─────────────────────────────────────────
+  // QUOTATION LOGIC (unchanged)
+  // ─────────────────────────────────────────
+  const form = document.getElementById('quotationForm');
+  const successMessage = document.getElementById('successMessage');
+  const DEFAULT_LOGO = './LogoPaintColor_v2.png';
+
+  const inputs = form.querySelectorAll('input, textarea');
+  inputs.forEach(input => {
+    input.addEventListener('blur', () => validateField(input));
+    input.addEventListener('input', () => {
+      if (input.classList.contains('error')) validateField(input);
+    });
+  });
+  // Evento Enter
+  document.getElementById('description').addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+      document.getElementById('description').addEventListener('keydown');// Evita el comportamiento por defecto (salto de línea o envío)
+
+    }
+  });
+
+  function validateField(field) {
+    const errorElement = document.getElementById(`error${field.id.charAt(0).toUpperCase() + field.id.slice(1)}`);
+    if (!field.value.trim()) {
+      field.classList.add('error');
+      if (errorElement) errorElement.classList.add('show');
+      return false;
+    }
+    if (field.id === 'amount' && parseFloat(field.value) <= 0) {
+      field.classList.add('error');
+      if (errorElement) errorElement.classList.add('show');
+      return false;
+    }
+    field.classList.remove('error');
+    if (errorElement) errorElement.classList.remove('show');
+    return true;
+  }
+
+  function validateForm() {
+    let isValid = true;
+    inputs.forEach(input => {if (!validateField(input)) isValid = false;});
+    return isValid;
+  }
+
+  function clearForm() {
+    form.reset();
+    inputs.forEach(input => {
+      input.classList.remove('error');
+      const errorElement = document.getElementById(`error${input.id.charAt(0).toUpperCase() + input.id.slice(1)}`);
+      if (errorElement) errorElement.classList.remove('show');
+    });
+    successMessage.classList.remove('show');
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!validateForm()) return;
+    generatePDF();
+  });
+
+  function generatePDF() {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF();
+
+    // ── Data ──────────────────────────────────────────────────────────────
+    const contractorName    = document.getElementById('contractorName').value.trim();
+    const clientName        = document.getElementById('clientName').value.trim();
+    const address           = document.getElementById('address').value.trim();
+    const contractorAddress = document.getElementById('contractorAddress').value.trim();
+    const description       = document.getElementById('description').value;
+    const description2      = document.getElementById('description2').value;
+    const amount            = parseFloat(document.getElementById('amount').value);
+    const formattedAmount   = new Intl.NumberFormat('en-US', {style: 'currency', currency: 'USD'}).format(amount);
+    const date              = new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'});
+
+    // ── Constants ─────────────────────────────────────────────────────────
+    const primaryColor  = [102, 126, 234];
+    const textColor     = [50, 50, 50];
+    const black         = [0, 0, 0];
+    const PAGE_H        = 297;   // mm - A4 height
+    const MARGIN_TOP    = 15;    // mm - top margin for continuation pages
+    const MARGIN_BOTTOM = 25;    // mm - safe zone before footer area
+    const CONTENT_LIMIT = PAGE_H - MARGIN_BOTTOM; // yPos limit before new page
+    const LH            = 6;     // standard line height mm
+    const MARGIN_L      = 20;
+    const CONTENT_W     = 170;
+
+    // ── Helper: check page overflow and add new page if needed ────────────
+    // Returns updated yPos (resets to MARGIN_TOP on new page)
+    function checkPage(y, neededSpace) {
+      if (y + (neededSpace || LH) > CONTENT_LIMIT) {
+        doc.addPage();
+        drawPageHeader();          // repeat logo + thin top line on new pages
+        return 48;   // espacio tras el header de continuación (logo 30mm + línea + margen)
+      }
+      return y;
+    }
+
+    // ── Helper: draw a lightweight header on continuation pages ───────────
+    function drawPageHeader() {
+      try {doc.addImage(DEFAULT_LOGO, 'PNG', 10, 5, 35, 30);}
+      catch(e) {}
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.2);
+      doc.line(MARGIN_L, 38, 190, 38);
+    }
+
+    // ── Helper: write paragraphs respecting \n + auto page-break ──────────
+    // prefixFirstLine: string prepended only to the first non-empty paragraph
+    function writeParagraphs(text, startY, prefixFirstLine) {
+      let y = startY;
+      const paragraphs = text.split('\n');
+      let isFirst = true;
+      paragraphs.forEach(para => {
+        if (para.trim() === '') {
+          y = checkPage(y, LH * 0.6);
+          y += LH * 0.6;
+        } else {
+          const lineText   = (isFirst && prefixFirstLine) ? prefixFirstLine + para : para;
+          const wrapped    = doc.splitTextToSize(lineText, CONTENT_W);
+          y = checkPage(y, wrapped.length * LH);
+          doc.text(wrapped, MARGIN_L, y);
+          y += wrapped.length * LH;
+          isFirst = false;
+        }
+      });
+      return y;
+    }
+
+    // ── Helper: draw the signatures + footer on whatever the last page is ─
+    function drawSignaturesAndFooter(y) {
+      // We need ~55 mm for signatures + note + footer
+      const NEEDED = 55;
+      if (y + NEEDED > CONTENT_LIMIT) {
+        doc.addPage();
+        drawPageHeader();
+        y = 48;
+      } else {
+        y += 10;
+      }
+
+      // Important note
+      doc.setTextColor(...black);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'normal');
+      const noteLines = doc.splitTextToSize(
+        'Important note: If you agree with the quote provided, we require a 50% deposit to proceed and follow up on your service.',
+        CONTENT_W
+      );
+      doc.text(noteLines, MARGIN_L, y);
+      y += noteLines.length * LH + 14;
+
+      // Signatures
+      doc.setTextColor(...textColor);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.line(30, y, 90, y);
+      doc.text('Contractor Signature', 60, y + 6, {align: 'center'});
+      doc.setFont(undefined, 'bold');
+      doc.text('Ulises Pineda', 60, y + 12, {align: 'center'});
+
+      doc.setFont(undefined, 'normal');
+      doc.line(120, y, 180, y);
+      doc.text('Client Signature', 150, y + 6, {align: 'center'});
+      doc.setFont(undefined, 'bold');
+      doc.text(clientName, 150, y + 12, {align: 'center'});
+
+      // Footer
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'italic');
+      doc.text('This document is a valid quote for 30 days from the date of issue.', 105, PAGE_H - 8, {align: 'center'});
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  PAGE 1 – HEADER BLOCK
+    // ═══════════════════════════════════════════════════════════════════════
+    try {doc.addImage(DEFAULT_LOGO, 'PNG', 10, 5, 35, 30);}
+    catch (e) {console.error('Error adding logo:', e);}
+
+    doc.setTextColor(...black);
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'bold');
+    doc.text('INVOICE', 105, 20, {align: 'center'});
+
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.text(date, 190, 30, {align: 'right'});
+
+    // Contractor block (left column)
+    let yLeft = 45;
+    doc.setTextColor(...black);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text('CONTRACTOR NAME:', MARGIN_L, yLeft);
+    yLeft += LH;
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...textColor);
+    doc.text(contractorName, MARGIN_L, yLeft);
+    yLeft += LH;
+    const contractorAddrLines = doc.splitTextToSize(contractorAddress, 80);
+    doc.text(contractorAddrLines, MARGIN_L, yLeft);
+    yLeft += contractorAddrLines.length * LH;
+
+    // Client block (right column)
+    let yRight = 45;
+    doc.setTextColor(...black);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text('CLIENT NAME:', 105, yRight);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...textColor);
+    const clientNameLines = doc.splitTextToSize(clientName, 80);
+    doc.text(clientNameLines, 148, yRight);
+    yRight += Math.max(clientNameLines.length, 1) * LH;
+
+    doc.setTextColor(...black);
+    doc.setFont(undefined, 'bold');
+    doc.text('CLIENT ADDRESS:', 105, yRight);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...textColor);
+    const addressLines = doc.splitTextToSize(address, 70);
+    doc.text(addressLines, 142, yRight);
+    yRight += addressLines.length * LH;
+
+    // Divider below the taller of the two columns
+    let yPos = Math.max(yLeft, yRight) + 6;
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.3);
+    doc.line(MARGIN_L, yPos, 190, yPos);
+    yPos += 10;
+
+    // ── SERVICE DESCRIPTION ───────────────────────────────────────────────
+    doc.setTextColor(...black);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.text('SERVICE DESCRIPTION:', MARGIN_L, yPos);
+    yPos += 8;
+
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...textColor);
+    doc.setFontSize(11);
+    yPos = writeParagraphs(description, yPos, 'Paint Up Colors LLC – ');
+    yPos += 6;
+
+    // ── ESTIMATE DESCRIPTION ──────────────────────────────────────────────
+    yPos = checkPage(yPos, LH * 2);
+    doc.setTextColor(...black);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.text('DETAILS:', MARGIN_L, yPos);
+    yPos += 8;
+
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...textColor);
+    doc.setFontSize(11);
+    const prefix = 'For this project Paint Up Colors would charge ' + formattedAmount + ' – ';
+    yPos = writeParagraphs(description2, yPos, prefix);
+    yPos += 4;
+
+    // Extra-work note
+    yPos = checkPage(yPos, LH * 3);
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'italic');
+    doc.setTextColor(100, 100, 100);
+    const extraLines = doc.splitTextToSize(
+      'Any extra work that needs to be done will be notified to the owner in advance. This will have an additional charge in material and time.',
+      CONTENT_W
+    );
+    doc.text(extraLines, MARGIN_L, yPos);
+    yPos += extraLines.length * LH + 8;
+
+    // ── TOTAL BOX ─────────────────────────────────────────────────────────
+    yPos = checkPage(yPos, 22);
+    doc.setFillColor(240, 240, 255);
+    doc.rect(MARGIN_L, yPos - 5, CONTENT_W, 18, 'F');
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.4);
+    doc.rect(MARGIN_L, yPos - 5, CONTENT_W, 18, 'S');
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...primaryColor);
+    doc.text('Total:', MARGIN_L + 5, yPos + 7);
+    doc.text(formattedAmount, 185, yPos + 7, {align: 'right'});
+    yPos += 18;
+
+    // ── SIGNATURES + FOOTER ───────────────────────────────────────────────
+    drawSignaturesAndFooter(yPos);
+
+    // ── SAVE ──────────────────────────────────────────────────────────────
+    const fileName = `Quote_${clientName.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`;
+    doc.save(fileName);
+
+    successMessage.classList.add('show');
+    setTimeout(() => successMessage.classList.remove('show'), 3000);
+  }
+
+  // Expose functions used by onclick attributes in HTML
+  window.logout    = logout;
+  window.clearForm = clearForm;
+
+}); // end DOMContentLoaded
