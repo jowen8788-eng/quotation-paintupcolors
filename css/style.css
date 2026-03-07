@@ -259,7 +259,13 @@ button {
 
 input.with-currency { padding-left: 35px; }
 
-/* ── DOCUMENT TYPE SELECT ── */
+
+/* ── LOGO FIX: hide white background borders ── */
+.logo-img {
+  mix-blend-mode: multiply;
+  display: block;
+}
+
 select {
   width: 100%;
   padding: 12px 15px;
