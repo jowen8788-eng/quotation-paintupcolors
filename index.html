@@ -18,16 +18,12 @@
                  form-action 'self' https://api.web3forms.com;
                  worker-src blob:;">
 
-  <!-- Prevents browsers from guessing (sniffing) content types -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 
-  <!-- Prevents your site from being embedded in iframes (clickjacking protection) -->
   <meta http-equiv="X-Frame-Options" content="DENY"/>
 
-  <!-- Controls how much referrer info is sent when navigating away -->
   <meta name="referrer" content="strict-origin-when-cross-origin"/>
 
-  <!-- Disables browser features not needed by this site -->
   <meta http-equiv="Permissions-Policy"
         content="geolocation=(), microphone=(), camera=(), payment=()"/>
 
@@ -85,6 +81,14 @@
     </div>
 
     <form id="quotationForm">
+      <div class="form-group">
+        <label for="docType">Document Type <span class="required">*</span></label>
+        <select id="docType" name="docType">
+          <option value="INVOICE">📋 INVOICE</option>
+          <option value="ESTIMATE">📄 ESTIMATE</option>
+        </select>
+      </div>
+
       <div class="grid">
         <div class="form-group">
           <label for="contractorName">Contractor Name <span class="required">*</span></label>
