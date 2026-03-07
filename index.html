@@ -18,12 +18,16 @@
                  form-action 'self' https://api.web3forms.com;
                  worker-src blob:;">
 
+  <!-- Prevents browsers from guessing (sniffing) content types -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 
+  <!-- Prevents your site from being embedded in iframes (clickjacking protection) -->
   <meta http-equiv="X-Frame-Options" content="DENY"/>
 
+  <!-- Controls how much referrer info is sent when navigating away -->
   <meta name="referrer" content="strict-origin-when-cross-origin"/>
 
+  <!-- Disables browser features not needed by this site -->
   <meta http-equiv="Permissions-Policy"
         content="geolocation=(), microphone=(), camera=(), payment=()"/>
 
@@ -39,7 +43,7 @@
 
 
   <div style="text-align: left;">
-    <img src='./LogoPaintColor_v2.png' width="150" height="150">
+    <img src='./LogoPaintColor_v2.png' class="logo-img" width="150" height="150">
   </div>
   <div id="loginContainer">
     <div class="header">
