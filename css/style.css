@@ -126,6 +126,7 @@ label .required { color: #e74c3c; }
 
 input[type="text"],
 input[type="number"],
+input[type="date"],
 textarea {
   width: 100%;
   padding: 12px 15px;
@@ -138,6 +139,7 @@ textarea {
 
 input[type="text"]:focus,
 input[type="number"]:focus,
+input[type="date"]:focus,
 textarea:focus {
   outline: none;
   border-color: #667eea;
