@@ -85,12 +85,20 @@
     </div>
 
     <form id="quotationForm">
-      <div class="form-group">
-        <label for="docType">Document Type <span class="required">*</span></label>
-        <select id="docType" name="docType">
-          <option value="INVOICE">📋 INVOICE</option>
-          <option value="ESTIMATE">📄 ESTIMATE</option>
-        </select>
+      <div class="grid">
+        <div class="form-group">
+          <label for="docType">Document Type <span class="required">*</span></label>
+          <select id="docType" name="docType">
+            <option value="INVOICE">📋 INVOICE</option>
+            <option value="ESTIMATE">📄 ESTIMATE</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="docDate">Document Date <span class="required">*</span></label>
+          <input type="date" id="docDate" name="docDate">
+          <div class="error-message" id="errorDocDate">This field is required</div>
+        </div>
       </div>
 
       <div class="grid">
